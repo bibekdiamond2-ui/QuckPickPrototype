@@ -41,6 +41,176 @@ const HomeScreen = () => {
 
   const mapRef = useRef(null);
 
+  // Request location permission on component mount
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
+  // Set default pickup location when user location is available
+  useEffect(() => {
+    if (userLocation && !pickupLocation) {
+      setPickupLocation(userLocation);
+      setPickupAddress('Current Location');
+    }
+  }, [userLocation, pickupLocation]);
+
+  // Request location permission
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Access Required',
+            message: 'Quick Pickup needs access to your location to show nearby rides and deliveries',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          setLocationPermission(true);
+          getCurrentLocation();
+        } else {
+          setLocationPermission(false);
+          Alert.alert('Permission Denied', 'Location permission is required for better experience');
+        }
+      } catch (err) {
+        console.warn(err);
+        setLocationPermission(false);
+      }
+    } else {
+      // iOS permission handling
+      Geolocation.requestAuthorization('whenInUse');
+      setLocationPermission(true);
+      getCurrentLocation();
+    }
+  };
+
+  // Get current location
+  const getCurrentLocation = () => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        const {latitude, longitude} = position.coords;
+        setUserLocation({latitude, longitude});
+
+        // Center map on user location
+        if (mapRef.current) {
+          mapRef.current.animateToRegion({
+            latitude,
+            longitude,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          }, 1000);
+        }
+      },
+      (error) => {
+        console.error('Location error:', error);
+        Alert.alert('Location Error', 'Unable to get your location. Please check your GPS settings.');
+      },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000}
+    );
+  };
+
+  // Handle map press to set pickup/destination
+  const handleMapPress = (event) => {
+    const {coordinate} = event.nativeEvent;
+
+    if (!pickupLocation) {
+      setPickupLocation(coordinate);
+      setPickupAddress(`${coordinate.latitude.toFixed(6)}, ${coordinate.longitude.toFixed(6)}`);
+    } else if (!destinationLocation) {
+      setDestinationLocation(coordinate);
+      setDestinationAddress(`${coordinate.latitude.toFixed(6)}, ${coordinate.longitude.toFixed(6)}`);
+      // Calculate route (mock implementation)
+      calculateRoute(pickupLocation, coordinate);
+    } else {
+      // Reset both if both are already set
+      setPickupLocation(coordinate);
+      setDestinationLocation(null);
+      setPickupAddress(`${coordinate.latitude.toFixed(6)}, ${coordinate.longitude.toFixed(6)}`);
+      setDestinationAddress('');
+      setRouteCoordinates(null);
+    }
+  };
+
+  // Calculate route (mock implementation - in real app, use Google Directions API)
+  const calculateRoute = (pickup, destination) => {
+    // Simple straight line for demo
+    setRouteCoordinates([pickup, destination]);
+  };
+
+  // Handle location input focus
+  const handlePickupFocus = () => {
+    navigation.navigate('LocationSearch', {
+      type: 'pickup',
+      onLocationSelected: (location) => {
+        setPickupLocation(location.coordinate);
+        setPickupAddress(location.address);
+      }
+    });
+  };
+
+  const handleDestinationFocus = () => {
+    navigation.navigate('LocationSearch', {
+      type: 'destination',
+      onLocationSelected: (location) => {
+        setDestinationLocation(location.coordinate);
+        setDestinationAddress(location.address);
+        if (pickupLocation) {
+          calculateRoute(pickupLocation, location.coordinate);
+        }
+      }
+    });
+  };
+
+  // Handle ride booking
+  const handleBookRide = () => {
+    if (!pickupLocation || !destinationLocation) {
+      Alert.alert('Missing Locations', 'Please select both pickup and destination locations');
+      return;
+    }
+
+    const bookingData = {
+      pickup: {
+        coordinate: pickupLocation,
+        address: pickupAddress
+      },
+      destination: {
+        coordinate: destinationLocation,
+        address: destinationAddress
+      },
+      vehicleType: 'standard' // Default
+    };
+
+    navigation.navigate('RideConfirmation', bookingData);
+  };
+
+  // Handle delivery booking
+  const handleBookDelivery = () => {
+    if (!pickupLocation || !destinationLocation) {
+      Alert.alert('Missing Locations', 'Please select both pickup and dropoff locations');
+      return;
+    }
+
+    const deliveryData = {
+      pickup: {
+        coordinate: pickupLocation,
+        address: pickupAddress
+      },
+      destination: {
+        coordinate: destinationLocation,
+        address: destinationAddress
+      },
+      packageDetails: {
+        weight: 1,
+        description: 'Standard package'
+      }
+    };
+
+    navigation.navigate('DeliveryConfirmation', deliveryData);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
