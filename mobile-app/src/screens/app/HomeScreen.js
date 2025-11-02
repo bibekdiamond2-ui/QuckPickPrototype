@@ -27,6 +27,19 @@ const {width} = Dimensions.get('window');
 const HomeScreen = () => {
   const [activeTab, setActiveTab] = useState('ride');
   const {user} = useAuth();
+  const navigation = useNavigation();
+
+  // Map state
+  const [userLocation, setUserLocation] = useState(null);
+  const [pickupLocation, setPickupLocation] = useState(null);
+  const [destinationLocation, setDestinationLocation] = useState(null);
+  const [pickupAddress, setPickupAddress] = useState('');
+  const [destinationAddress, setDestinationAddress] = useState('');
+  const [routeCoordinates, setRouteCoordinates] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [locationPermission, setLocationPermission] = useState(false);
+
+  const mapRef = useRef(null);
 
   return (
     <View style={styles.container}>
