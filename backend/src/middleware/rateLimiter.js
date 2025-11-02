@@ -99,10 +99,56 @@ const adminLimiter = rateLimit({
   }
 });
 
+/**
+ * Rate limiter for delivery creation
+ */
+const deliveryLimiter = rateLimit({
+  windowMs: 3600000, // 1 hour
+  max: 15, // 15 delivery requests per hour per IP
+  message: {
+    success: false,
+    error: 'Too many delivery requests',
+    message: 'You have exceeded the hourly delivery limit'
+  },
+  handler: (req, res) => {
+    logger.warn(`Delivery creation rate limit exceeded for IP: ${req.ip}, User: ${req.user?.uid}`);
+    res.status(429).json({
+      success: false,
+      error: 'Too many delivery requests',
+      message: 'You have reached the maximum number of delivery requests per hour. Please try again later.'
+    });
+  }
+});
+
+/**
+ * Rate limiter for driver location updates
+ * Allows more frequent updates for real-time tracking
+ */
+const locationLimiter = rateLimit({
+  windowMs: 30000, // 30 seconds
+  max: 1, // 1 update per 30 seconds per driver
+  keyGenerator: (req) => req.user?.uid || req.ip,
+  message: {
+    success: false,
+    error: 'Too many location updates',
+    message: 'Please wait 30 seconds before updating location again'
+  },
+  handler: (req, res) => {
+    logger.warn(`Location update rate limit exceeded for driver: ${req.user?.uid}`);
+    res.status(429).json({
+      success: false,
+      error: 'Too many location updates',
+      message: 'Location updates are limited to once every 30 seconds'
+    });
+  }
+});
+
 module.exports = {
   generalLimiter,
   authLimiter,
   rideLimiter,
+  deliveryLimiter,
+  locationLimiter,
   locationUpdateLimiter,
   adminLimiter
 };
