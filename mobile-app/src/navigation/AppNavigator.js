@@ -1,15 +1,23 @@
 /**
  * Main App Navigator
- * Bottom tabs for Quick Ride and Quick Pickup Express
+ * Role-based navigation for passengers and drivers
  */
 
 import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useAuth} from '../context/AuthContext';
 import HomeScreen from '../screens/app/HomeScreen';
 import ProfileScreen from '../screens/app/ProfileScreen';
 import TripHistoryScreen from '../screens/app/TripHistoryScreen';
+import RideConfirmationScreen from '../screens/app/RideConfirmationScreen';
+import LiveTrackingScreen from '../screens/app/LiveTrackingScreen';
+
+// Driver screens (to be created)
+import DriverHomeScreen from '../screens/driver/DriverHomeScreen';
+import EarningsScreen from '../screens/driver/EarningsScreen';
+import DriverProfileScreen from '../screens/driver/DriverProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
