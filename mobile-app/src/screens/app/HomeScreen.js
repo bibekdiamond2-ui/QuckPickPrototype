@@ -261,23 +261,131 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Content Area - Map will go here in Phase 2 */}
+      {/* Content Area - Map and Location Inputs */}
       <View style={styles.content}>
-        <View style={styles.placeholderContainer}>
-          <Icon
-            name={activeTab === 'ride' ? 'map-marker' : 'package-variant'}
-            size={80}
-            color="#E0E0E0"
-          />
-          <Text style={styles.placeholderText}>
-            {activeTab === 'ride'
-              ? 'Ride booking coming soon!'
-              : 'Delivery service coming soon!'}
-          </Text>
-          <Text style={styles.placeholderSubtext}>
-            Map view and booking functionality will be added in Phase 2
-          </Text>
+        {/* Location Input Overlay */}
+        <View style={styles.locationInputContainer}>
+          <TouchableOpacity
+            style={[styles.locationInput, pickupLocation && styles.locationInputFilled]}
+            onPress={handlePickupFocus}
+          >
+            <Icon
+              name="map-marker"
+              size={20}
+              color={pickupLocation ? "#4CAF50" : "#999"}
+            />
+            <TextInput
+              style={styles.locationTextInput}
+              placeholder="Pickup Location"
+              value={pickupAddress}
+              editable={false}
+              pointerEvents="none"
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.locationInput, destinationLocation && styles.locationInputFilled]}
+            onPress={handleDestinationFocus}
+          >
+            <Icon
+              name="map-marker-radius"
+              size={20}
+              color={destinationLocation ? "#FF6B35" : "#999"}
+            />
+            <TextInput
+              style={styles.locationTextInput}
+              placeholder="Where to?"
+              value={destinationAddress}
+              editable={false}
+              pointerEvents="none"
+            />
+          </TouchableOpacity>
         </View>
+
+        {/* Map View */}
+        <View style={styles.mapContainer}>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#FF6B35" />
+              <Text style={styles.loadingText}>Loading map...</Text>
+            </View>
+          ) : (
+            <MapView
+              ref={mapRef}
+              style={styles.map}
+              provider={PROVIDER_GOOGLE}
+              initialRegion={{
+                latitude: userLocation?.latitude || 28.6139,
+                longitude: userLocation?.longitude || 77.2090,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              }}
+              showsUserLocation={true}
+              showsMyLocationButton={true}
+              onPress={handleMapPress}
+            >
+              {/* Pickup Marker */}
+              {pickupLocation && (
+                <Marker
+                  coordinate={pickupLocation}
+                  pinColor="#4CAF50"
+                  title="Pickup"
+                  description={pickupAddress}
+                />
+              )}
+
+              {/* Destination Marker */}
+              {destinationLocation && (
+                <Marker
+                  coordinate={destinationLocation}
+                  pinColor="#FF6B35"
+                  title="Destination"
+                  description={destinationAddress}
+                />
+              )}
+
+              {/* Route Polyline */}
+              {routeCoordinates && (
+                <Polyline
+                  coordinates={routeCoordinates}
+                  strokeColor="#FF6B35"
+                  strokeWidth={4}
+                  lineDashPattern={[10, 5]}
+                />
+              )}
+            </MapView>
+          )}
+
+          {/* Current Location Button */}
+          <TouchableOpacity
+            style={styles.currentLocationButton}
+            onPress={getCurrentLocation}
+          >
+            <Icon name="crosshairs-gps" size={24} color="#FF6B35" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Booking Button */}
+        {pickupLocation && destinationLocation && (
+          <View style={styles.bookingButtonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.bookingButton,
+                activeTab === 'delivery' && styles.deliveryButton
+              ]}
+              onPress={activeTab === 'ride' ? handleBookRide : handleBookDelivery}
+            >
+              <Icon
+                name={activeTab === 'ride' ? 'car' : 'package-variant'}
+                size={20}
+                color="#FFFFFF"
+              />
+              <Text style={styles.bookingButtonText}>
+                {activeTab === 'ride' ? 'Book Quick Ride' : 'Book Delivery'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
